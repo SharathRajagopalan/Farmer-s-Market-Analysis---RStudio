@@ -1,0 +1,112 @@
+---
+title: "Project - Farmer's Market Analysis"
+author: "Sharath Rajagopalan"
+date: "2/28/2020"
+output: html_document
+---
+```{r}
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(treemapify)
+library(stringr)
+library(tidyverse)
+library(lubridate)
+
+```
+
+
+```{r}
+
+payment<- fm[,c(11,25:29)]
+payment[payment=="Y"] <-1
+payment[payment=="N"] <-0
+long_form<-gather(payment, key="PaymentMethods", value=measurement, -State)
+long_form$measurement<-as.numeric(long_form$measurement)
+
+payment1<-long_form %>% 
+  filter(measurement==1) %>% 
+  group_by(State, PaymentMethods) %>% 
+  summarise(count=n())
+
+long_form<-full_join(long_form, State_regions, by="State")
+
+payment2<-long_form %>% 
+  filter(measurement==1) %>% 
+  group_by(State, Region, PaymentMethods) %>% 
+  drop_na() %>% 
+  summarise(count=n())
+
+ggplot(payment2, aes(area=count, label=PaymentMethods, fill=Region))+geom_treemap()+
+  geom_treemap_text(fontface = "bold", colour = "white", place = "centre",grow = FALSE)+
+  ggtitle("Payemnt Distribution of the Farmer's Market by Region")
+
+```
+
+
+```{r}
+library(usmap)
+library(ggplot2)
+
+temp88<-fm %>% 
+  group_by(State) %>% 
+  drop_na() %>% 
+  summarise(count=n())
+
+temp88 <- temp88%>%
+  filter( State != "Virgin Islands" & State != "Puerto Rico" )
+
+temp88<-cbind(temp8,temp88$count)
+  colnames(temp88)[5]="count"
+
+plot_usmap(data = data.frame(temp88), values = "count", color = "red", labels = TRUE, label_color = "black") + scale_fill_continuous(low = "white", high = "blue", name = "Farmer's Market Count", label = scales::comma) + theme(legend.position = "right")+ ggtitle(" Farmer's Market presence, State wise")
+```
+
+
+```{r}
+ya1<-fm[,c(2,13)]
+  ya1<-separate(ya1,Season1Date,c("start","end"), sep = "to")
+  ya1$start_year<-substr(ya1$start,7,10)
+  ya1$end_year<-substr(ya1$end,8,11) 
+  ya1<-filter(ya1, ya1$start_year %in% c("2010","2011","2012","2013","2014","2015","2016","2017","2018","2019","2020") )
+  ya1$start_year<-as.numeric(ya1$start_year,na.rm = TRUE)
+  ya1$end_year<-as.numeric(ya1$end_year,na.rm = TRUE)
+  
+ya1<-select(ya1, c(MarketName, start_year)) %>% 
+  filter(start_year != 2020) %>% 
+  group_by(start_year) %>% 
+  summarise(count=n())
+  
+ggplot(ya1, aes(x=start_year, y=count))+ geom_line(stat = "identity")+ geom_line(colour = "red", size=1.5)+
+ggtitle("Farmer's Market growth by Year (2010-2019)")
+
+```
+
+
+```{r}
+temp<- fm[,c(11,30:50)]
+temp[temp=="Y"] <-1
+temp[temp=="N"] <-0
+lf<-gather(temp, key="Typeofgoods", value=measurement, -State)
+lf$measurement<-as.numeric(lf$measurement,na.rm=TRUE)
+
+temp1<-lf %>% 
+  filter(measurement==1) %>% 
+  group_by(State, Typeofgoods) %>% 
+  summarise(count=n())
+
+lf<-full_join(lf, State_regions, by="State")
+
+temp2<-lf %>% 
+  filter(measurement==1) %>% 
+  group_by(State, Region, Typeofgoods) %>% 
+  drop_na() %>% 
+  summarise(count=n())
+
+ggplot(temp2, aes(x=Typeofgoods, y=count, fill=Region))+
+  geom_bar(stat='identity')+ coord_flip()+ ggtitle("Count for the Types of goods VS Region")
+
+
+```
+
