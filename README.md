@@ -1,2 +1,1 @@
-# R-Studio
-Farmer's Market Analysis
+# Farmer's Market Analysis using R-Studio
